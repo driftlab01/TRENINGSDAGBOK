@@ -11,6 +11,7 @@ til originalskjemaet (`src/mal.pdf`) ferdig utfylt.
 | Samme dag, før økt | **Dag** | Trapp og søvn (grønn/gul/rød). Appen viser anbefaling: dårligste farge styrer, rød søvn alene = gul. |
 | Etter økt | **Dag** | Gjennomført, km, varighet, RPE, avvik, kommentar, dagsfølelse, plager. |
 | Etter uka | **Uka** | Sum, «Hvordan føltes uka?», «Justering neste uke», PDF og sikkerhetskopi. |
+| Når som helst | **Statistikk** | Km, varighet, belastning (RPE × min) og dager med plager per uke, 8–52 uker tilbake. |
 
 Km og varighet summeres fortløpende (linja nederst). Varighet kan skrives som
 `45`, `1:15`, `1t15`, `1,5t` eller `75 min`.

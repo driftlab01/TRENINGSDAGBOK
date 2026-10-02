@@ -1,5 +1,5 @@
 // Generert av build.mjs – ikke rediger for hånd.
-const CACHE = "treningsdagbok-990a7b393f";
+const CACHE = "treningsdagbok-d25c7981b8";
 const FILER = ["./","index.html","vendor/pdf-lib.min.js","manifest.webmanifest","icons/icon.svg","icons/icon-180.png","icons/icon-192.png","icons/icon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILER)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
