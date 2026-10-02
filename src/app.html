@@ -195,7 +195,7 @@ tfoot td { font-weight: 700; border-bottom: 0 }
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" onerror="var s=document.createElement('script');s.src='https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js';document.head.appendChild(s)"></script>
+<!--PDFLIB-->
 <script>
 const MAL_PDF_B64 = "__MAL_PDF_B64__";
 </script>
@@ -383,6 +383,9 @@ const store = {
 };
 function settSync(t, feil) { const el = $("#sync"); el.textContent = t; el.style.color = feil ? "var(--r)" : ""; }
 
+const ER_ARTEFAKT = !!(window.claude && typeof window.claude.use === "function");
+const BERORING = window.matchMedia("(pointer: coarse)").matches;
+
 // ---------- tilstand ----------
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
@@ -549,14 +552,16 @@ function visUka(w, ds) {
   </section>
   <section class="card">
     <div class="sec-h"><h2>Eksport</h2></div>
-    <p class="hint">PDF-en er ditt eget skjema, ferdig utfylt. Åpne den og skriv ut derfra.</p>
+    <p class="hint">PDF-en er ditt eget skjema, ferdig utfylt.${ER_ARTEFAKT ? " Åpne den og skriv ut derfra." : ""}</p>
     <div class="actions">
-      <button class="btn" data-act="pdf" id="pdfBtn">Last ned PDF</button>
+      ${ER_ARTEFAKT ? "" : `<button class="btn" data-act="pdf" data-modus="vis">${BERORING ? "Del / skriv ut PDF" : "Åpne PDF for utskrift"}</button>`}
+      <button class="btn${ER_ARTEFAKT ? "" : " sec"}" data-act="pdf" data-modus="last">Last ned PDF</button>
       <button class="btn sec" data-act="backup">Sikkerhetskopi (JSON)</button>
       <label class="btn sec" for="importFil">Gjenopprett …</label>
       <input type="file" id="importFil" accept="application/json,.json" hidden>
     </div>
     <p class="msg" id="eksportMsg"></p>
+    <div id="delKlar"></div>
     <div id="importConfirm"></div>
   </section>`;
 }
@@ -595,7 +600,8 @@ document.addEventListener("click", async (e) => {
     state.visOkt2[(act === "okt2p" ? "p" : "d") + b.dataset.i] = true; render();
     const f = act === "okt2p" ? $(`#f-days\\.${b.dataset.i}\\.okt\\.1\\.plan`) : $(`#f-days\\.${b.dataset.i}\\.okt\\.1\\.gj`);
     if (f) f.focus();
-  } else if (act === "pdf") lagPdf(b);
+  } else if (act === "pdf") lagPdf(b, b.dataset.modus);
+  else if (act === "del") delFil();
   else if (act === "backup") backup();
   else if (act === "importer") { await importer(); }
   else if (act === "avbryt") { $("#importConfirm").innerHTML = ""; ventendeImport = null; }
@@ -606,7 +612,7 @@ $("#toToday").onclick = () => last(iDagNokkel());
 
 // ---------- filer ----------
 async function lagre(filnavn, data, mime) {
-  const dl = window.claude && typeof window.claude.use === "function" ? await window.claude.use("downloads").catch(() => null) : null;
+  const dl = ER_ARTEFAKT ? await window.claude.use("downloads").catch(() => null) : null;
   if (dl) { await dl.save({ filename: filnavn, data }); return "saved"; }
   const url = URL.createObjectURL(new Blob([data], { type: mime }));
   const a = document.createElement("a");
@@ -685,7 +691,39 @@ function fyllTekst(form, font, navn, tekst, maks) {
   felt.setFontSize(Math.max(str, 4));
   felt.setText(tekst);
 }
-async function lagPdf(knapp) {
+// Viser PDF-en: delingsmenyen på mobil (Skriv ut / Arkiver i Filer), ny fane på PC
+let klarFil = null;
+async function delFil() {
+  const f = klarFil; if (!f) return;
+  try { await navigator.share({ files: [f], title: f.name }); $("#delKlar").innerHTML = ""; melding("PDF delt."); }
+  catch (e) {
+    if (e && e.name === "AbortError") return;
+    if (e && e.name === "NotAllowedError") {
+      $("#delKlar").innerHTML = `<button class="btn" data-act="del">PDF-en er klar – trykk for å dele</button>`;
+      melding("");
+    } else { melding("Deling feilet. Bruk «Last ned PDF» i stedet.", true); }
+  }
+}
+async function lagPdf(knapp, modus) {
+  const fane = modus === "vis" && !BERORING ? window.open("", "_blank") : null;
+  const bytes = await byggPdf(knapp);
+  if (!bytes) { if (fane) fane.close(); return; }
+  const navn = `Treningsdagbok ${state.key}.pdf`;
+  try {
+    if (modus === "vis" && BERORING && navigator.canShare) {
+      klarFil = new File([bytes], navn, { type: "application/pdf" });
+      if (navigator.canShare({ files: [klarFil] })) { await delFil(); return; }
+    }
+    if (fane) {
+      fane.location.href = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" }));
+      melding("PDF åpnet i ny fane. Skriv ut derfra (Ctrl/Cmd + P).");
+      return;
+    }
+    await lagre(navn, bytes, "application/pdf");
+    melding(ER_ARTEFAKT ? "PDF er laget. Åpne den for å skrive ut." : "PDF er lastet ned.");
+  } catch (e) { melding(feilTekst(e), true); }
+}
+async function byggPdf(knapp) {
   if (!window.PDFLib) { melding("PDF-verktøyet er ikke lastet ennå. Sjekk nettforbindelsen og prøv igjen.", true); return; }
   knapp.disabled = true; melding("Lager PDF …");
   try {
@@ -725,10 +763,11 @@ async function lagPdf(knapp) {
     fyllTekst(form, font, "Justering neste uke", w.justering, 9);
     form.updateFieldAppearances(font);
     const bytes = await doc.save();
-    await lagre(`Treningsdagbok ${state.key}.pdf`, bytes, "application/pdf");
-    melding("PDF er laget. Åpne den for å skrive ut.");
+    knapp.disabled = false;
+    return bytes;
   } catch (e) { melding(feilTekst(e), true); }
   knapp.disabled = false;
+  return null;
 }
 
 // ---------- start ----------
