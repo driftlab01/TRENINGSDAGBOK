@@ -1,0 +1,737 @@
+<title>Treningsdagbok</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: én kolonne med ukenavigasjon øverst, faner (Planlegg / Dag / Uka) og en fast sumlinje nederst.
+   Farger og former er hentet fra PDF-skjemaet: lys grå flate, blå aksent, trafikklys. */
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --line: #dde1e7;
+  --fg: #1c1d20;
+  --muted: #6b7280;
+  --accent: #2a62d6;
+  --accent-soft: #dbe7fb;
+  --accent-fg: #ffffff;
+  --g: #2fa84f; --g-soft: #dcf4e2;
+  --y: #d99a00; --y-soft: #fdf1cf;
+  --r: #dc4a4a; --r-soft: #fbe0e0;
+  --font: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --radius: 14px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #121418; --surface: #1b1e24; --surface-2: #242831; --line: #323743;
+  --fg: #eceef2; --muted: #9aa1ad; --accent: #6f9bff; --accent-soft: #23345a; --accent-fg: #0d1220;
+  --g: #4cc46c; --g-soft: #1d3a26; --y: #f0bd3a; --y-soft: #3d3218; --r: #f07575; --r-soft: #432224;
+  color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #121418; --surface: #1b1e24; --surface-2: #242831; --line: #323743;
+  --fg: #eceef2; --muted: #9aa1ad; --accent: #6f9bff; --accent-soft: #23345a; --accent-fg: #0d1220;
+  --g: #4cc46c; --g-soft: #1d3a26; --y: #f0bd3a; --y-soft: #3d3218; --r: #f07575; --r-soft: #432224;
+  color-scheme: dark }
+
+* { box-sizing: border-box }
+body { background: var(--bg); color: var(--fg); font: 15px/1.45 var(--font); margin: 0; -webkit-text-size-adjust: 100% }
+.wrap { max-width: 760px; margin: 0 auto; padding-inline: 16px; padding-block: 16px 110px; display: grid; gap: 14px }
+h1, h2, h3 { margin: 0; text-wrap: balance }
+button, input, textarea { font: inherit; color: inherit }
+button { cursor: pointer }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px }
+.num { font-variant-numeric: tabular-nums }
+
+/* topp */
+.top { display: flex; align-items: center; gap: 12px; flex-wrap: wrap }
+.logo { width: 38px; height: 38px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; flex: none }
+.top h1 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; flex: 0 1 auto; min-width: 0 }
+.sync { font-size: 12px; color: var(--muted); margin-left: auto }
+.weeknav { display: flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 6px }
+.weeknav .mid { flex: 1; text-align: center; min-width: 0 }
+.weeknav .mid b { font-size: 17px; display: block }
+.weeknav .mid span { font-size: 13px; color: var(--muted) }
+.iconbtn { border: 0; background: var(--surface-2); width: 40px; height: 40px; border-radius: 10px; font-size: 18px; display: grid; place-items: center; flex: none }
+.today-btn { border: 0; background: none; color: var(--accent); font-weight: 600; font-size: 13px; padding: 2px 6px }
+
+.field { display: grid; gap: 4px; min-width: 0; align-content: start }
+.field > label, .lbl { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: 0.02em }
+input[type=text], input[type=number], textarea, input:not([type]) {
+  width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 10px 12px; font-size: 16px; min-width: 0 }
+textarea { resize: vertical; min-height: 44px }
+input:focus, textarea:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 3px var(--accent-soft) }
+::placeholder { color: var(--muted); opacity: .7 }
+
+/* faner */
+.tabs { display: grid; grid-template-columns: repeat(3, 1fr); background: var(--surface-2); border-radius: 12px; padding: 4px; gap: 4px; position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5 }
+.tabs button { border: 0; background: none; border-radius: 9px; padding: 9px 4px; font-weight: 600; font-size: 14px; color: var(--muted) }
+.tabs button[aria-selected=true] { background: var(--surface); color: var(--fg); box-shadow: 0 1px 2px rgb(0 0 0 / .08) }
+.tabs small { display: block; font-weight: 500; font-size: 11px }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 14px; display: grid; gap: 12px; min-width: 0 }
+.card h2 { font-size: 16px; font-weight: 700 }
+.hint { font-size: 13px; color: var(--muted); margin: 0 }
+.sec-h { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap }
+.sec-h .when { font-size: 12px; color: var(--muted) }
+.phase { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--accent) }
+
+/* planlegg */
+.planrow { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: start; padding-block: 10px; border-top: 1px solid var(--line) }
+.planrow:first-of-type { border-top: 0; padding-top: 0 }
+.dayname { font-weight: 700; font-size: 16px; line-height: 1.2 }
+.dayname span { display: block; font-weight: 500; font-size: 12px; color: var(--muted) }
+.planrow .inputs { display: grid; gap: 6px; min-width: 0 }
+.lastweek { background: var(--accent-soft); border-radius: 10px; padding: 10px 12px; font-size: 14px }
+.lastweek b { display: block; font-size: 12px; color: var(--accent) }
+
+/* dag */
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px }
+.days button { border: 1px solid var(--line); background: var(--surface); border-radius: 10px; padding: 6px 0 5px; display: grid; justify-items: center; gap: 1px; font-size: 12px; color: var(--muted); min-width: 0 }
+.days button b { font-size: 15px; color: var(--fg) }
+.days button.today b { color: var(--accent) }
+.days button[aria-pressed=true] { background: var(--accent); border-color: var(--accent); color: var(--accent-fg) }
+.days button[aria-pressed=true] b { color: var(--accent-fg) }
+.days i { width: 6px; height: 6px; border-radius: 50%; background: transparent }
+.days i.planned { background: var(--line) }
+.days i.done { background: var(--g) }
+.days button[aria-pressed=true] i.planned, .days button[aria-pressed=true] i.done { background: var(--accent-fg) }
+
+.planbox { background: var(--surface-2); border-radius: 10px; padding: 10px 12px; display: grid; gap: 2px }
+.planbox .lbl { color: var(--muted) }
+.planbox p { margin: 0 }
+.planbox .empty { color: var(--muted); font-style: italic }
+
+.lights { display: grid; grid-template-columns: 56px 1fr; gap: 8px 10px; align-items: center }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; min-width: 0 }
+.seg button { border: 1.5px solid var(--line); background: var(--surface); border-radius: 999px; padding: 7px 12px; font-size: 14px; display: inline-flex; align-items: center; gap: 6px; min-height: 38px }
+.dot { width: 14px; height: 14px; border-radius: 50%; border: 1.5px solid; flex: none }
+.dot.gronn { border-color: var(--g); background: var(--g-soft) }
+.dot.gul { border-color: var(--y); background: var(--y-soft) }
+.dot.rod { border-color: var(--r); background: var(--r-soft) }
+.seg button[aria-pressed=true] { border-color: var(--fg); font-weight: 600 }
+.seg button[aria-pressed=true] .dot.gronn { background: var(--g) }
+.seg button[aria-pressed=true] .dot.gul { background: var(--y) }
+.seg button[aria-pressed=true] .dot.rod { background: var(--r) }
+.rec { border-radius: 10px; padding: 10px 12px; font-weight: 600; display: flex; gap: 8px; align-items: center }
+.rec.gronn { background: var(--g-soft) } .rec.gul { background: var(--y-soft) } .rec.rod { background: var(--r-soft) }
+.dot.fylt.gronn { background: var(--g) } .dot.fylt.gul { background: var(--y) } .dot.fylt.rod { background: var(--r) }
+.rec small { display: block; font-weight: 400; font-size: 12px; color: var(--muted) }
+
+.grid3 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.okt { display: grid; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--line) }
+.okt:first-of-type { border-top: 0; padding-top: 0 }
+.okt h3 { font-size: 14px; font-weight: 700 }
+.parsed { font-size: 12px; color: var(--muted); min-height: 1em }
+.rpe { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px }
+.rpe button { border: 1px solid var(--line); background: var(--surface); border-radius: 8px; padding: 8px 0; font-weight: 600; font-variant-numeric: tabular-nums; min-width: 0 }
+.rpe button[aria-pressed=true] { background: var(--accent); color: var(--accent-fg); border-color: var(--accent) }
+.rpe-desc { font-size: 12px; color: var(--muted); min-height: 1.2em }
+.ghost { border: 1.5px dashed var(--line); background: none; border-radius: 10px; padding: 10px; color: var(--accent); font-weight: 600 }
+
+/* uka */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px }
+.stat { background: var(--surface-2); border-radius: 10px; padding: 10px; min-width: 0 }
+.stat b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; white-space: nowrap }
+.stat span { font-size: 12px; color: var(--muted) }
+.bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; align-items: end; height: 90px }
+.bar { display: grid; gap: 4px; justify-items: center; align-self: stretch; grid-template-rows: 1fr auto auto; font-size: 11px; color: var(--muted) }
+.bar div { width: 100%; max-width: 34px; align-self: end; background: var(--accent); border-radius: 5px 5px 2px 2px; min-height: 2px }
+.bar em { font-style: normal; font-variant-numeric: tabular-nums; color: var(--fg) }
+.tablewrap { overflow-x: auto }
+table { border-collapse: collapse; width: 100%; font-size: 13px; min-width: 520px }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top }
+th { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em }
+td.n, th.n { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap }
+tfoot td { font-weight: 700; border-bottom: 0 }
+.actions { display: flex; gap: 8px; flex-wrap: wrap }
+.btn { border: 0; background: var(--accent); color: var(--accent-fg); border-radius: 10px; padding: 11px 16px; font-weight: 600 }
+.btn.sec { background: var(--surface-2); color: var(--fg) }
+.btn[disabled] { opacity: .6 }
+.msg { font-size: 13px; color: var(--muted); margin: 0 }
+.msg.err { color: var(--r) }
+.confirm { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; background: var(--r-soft); padding: 10px; border-radius: 10px; font-size: 14px }
+
+/* sumlinje */
+.sumbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; background: var(--surface); border-top: 1px solid var(--line); padding: 10px 16px calc(10px + env(safe-area-inset-bottom, 0px)) }
+.sumbar .in { max-width: 760px; margin: 0 auto; display: flex; gap: 16px; align-items: baseline; flex-wrap: wrap }
+.sumbar b { font-size: 18px; font-variant-numeric: tabular-nums }
+.sumbar span { font-size: 12px; color: var(--muted) }
+.sumbar .lead { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .06em }
+
+@media (max-width: 460px) {
+  .stats { grid-template-columns: 1fr 1fr }
+  .lights { grid-template-columns: 1fr }
+  .rpe { grid-template-columns: repeat(5, 1fr) }
+}
+@media (prefers-reduced-motion: no-preference) { .tabs button, .days button, .seg button, .rpe button { transition: background .12s, border-color .12s } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="logo" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12h4l3-7 4 14 3-7h6"/></svg></div>
+    <h1>Treningsdagbok</h1>
+    <span class="sync" id="sync">Lagres på denne enheten</span>
+  </header>
+
+  <nav class="weeknav" aria-label="Velg uke">
+    <button class="iconbtn" id="prevWeek" aria-label="Forrige uke">‹</button>
+    <div class="mid"><b class="num" id="weekTitle">Uke</b><span id="weekRange"></span> <button class="today-btn" id="toToday" hidden>Til denne uka</button></div>
+    <button class="iconbtn" id="nextWeek" aria-label="Neste uke">›</button>
+  </nav>
+
+  <div class="tabs" role="tablist">
+    <button role="tab" id="tab-plan" data-tab="plan">Planlegg<small>før uka</small></button>
+    <button role="tab" id="tab-dag" data-tab="dag">Dag<small>før og etter økt</small></button>
+    <button role="tab" id="tab-uka" data-tab="uka">Uka<small>sum og refleksjon</small></button>
+  </div>
+
+  <main id="view"></main>
+</div>
+
+<div class="sumbar" aria-live="polite">
+  <div class="in">
+    <span class="lead">Sum uke</span>
+    <div><b id="sumKm">0</b> <span>km</span></div>
+    <div><b id="sumTid">0:00</b> <span>varighet</span></div>
+    <div><b id="sumOkt">0</b> <span id="sumOktTxt">økter</span></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js" onerror="var s=document.createElement('script');s.src='https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js';document.head.appendChild(s)"></script>
+<script>
+const MAL_PDF_B64 = "__MAL_PDF_B64__";
+</script>
+<script>
+(() => {
+"use strict";
+
+// ---------- konstanter ----------
+const DAGER = ["Man", "Tir", "Ons", "Tor", "Fre", "Lør", "Søn"];
+const DAGER_LANG = ["Mandag", "Tirsdag", "Onsdag", "Torsdag", "Fredag", "Lørdag", "Søndag"];
+const PDF_DAG = ["Man", "Tir", "Ons", "Tor", "Fre", "Lor", "Son"];
+const MND = ["jan", "feb", "mar", "apr", "mai", "jun", "jul", "aug", "sep", "okt", "nov", "des"];
+const FARGER = ["gronn", "gul", "rod"];
+const NIVA = { gronn: 0, gul: 1, rod: 2 };
+const ANBEFALING = {
+  gronn: ["Kjør som planlagt", "Grønt lys"],
+  gul: ["Vurder å justere", "Følg med underveis"],
+  rod: ["Ta fri eller rolig dag", "Kroppen sier stopp"],
+};
+const PLAGER = { gronn: "Ingen plager", gul: "Antydning – følg med", rod: "Tydelig plage – juster" };
+const RPE_TEKST = {
+  1: "Veldig lett · I-1 · kan prate uanstrengt", 2: "Veldig lett / nokså lett · I-1–I-2",
+  3: "Nokså lett · I-2 · lengre setninger", 4: "Behagelig anstrengende · I-3 · korte setninger",
+  5: "Behagelig anstrengende · I-3 · korte setninger", 6: "Anstrengende · I-4 · noen ord",
+  7: "Anstrengende · I-4 · noen ord", 8: "Veldig anstrengende · I-5 · ett–to ord, puster tungt",
+  9: "Veldig, veldig anstrengende · I-5–I-7", 10: "Veldig, veldig anstrengende · I-6–7 · hiver etter pusten",
+};
+
+// ---------- dato / uke ----------
+function isoUke(d) {
+  const t = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dag = t.getUTCDay() || 7;
+  t.setUTCDate(t.getUTCDate() + 4 - dag);
+  const aar = t.getUTCFullYear();
+  const uke = Math.ceil(((t - Date.UTC(aar, 0, 1)) / 864e5 + 1) / 7);
+  return { aar, uke };
+}
+const ukeNokkel = ({ aar, uke }) => `${aar}-W${String(uke).padStart(2, "0")}`;
+function mandagI(nokkel) {
+  const [aar, w] = nokkel.split("-W").map(Number);
+  const jan4 = new Date(aar, 0, 4);
+  const man = new Date(aar, 0, 4 - ((jan4.getDay() || 7) - 1));
+  man.setDate(man.getDate() + (w - 1) * 7);
+  return man;
+}
+function datoer(nokkel) {
+  const m = mandagI(nokkel);
+  return DAGER.map((_, i) => { const d = new Date(m); d.setDate(m.getDate() + i); return d; });
+}
+function flyttUke(nokkel, delta) {
+  const m = mandagI(nokkel); m.setDate(m.getDate() + 7 * delta + 3);
+  return ukeNokkel(isoUke(m));
+}
+const idag = () => new Date();
+const iDagNokkel = () => ukeNokkel(isoUke(idag()));
+const iDagIndeks = () => (idag().getDay() + 6) % 7;
+
+// ---------- tall / tid ----------
+function parseKm(s) {
+  if (s == null) return 0;
+  const v = parseFloat(String(s).replace(",", ".").replace(/[^0-9.]/g, ""));
+  return isFinite(v) ? v : 0;
+}
+// Varighet i minutter. Godtar 45 · 1:15 · 1:15:30 · 1t15 · 1t 15m · 1,5t · 75 min · 90m
+function parseTid(s) {
+  if (!s) return 0;
+  s = String(s).trim().toLowerCase().replace(",", ".");
+  let m;
+  if ((m = s.match(/^(\d+):(\d{1,2})(?::(\d{1,2}))?$/))) return +m[1] * 60 + +m[2] + (m[3] ? +m[3] / 60 : 0);
+  if ((m = s.match(/^(\d+(?:\.\d+)?)\s*(?:t|h|time|timer)\s*(?:(\d+)\s*(?:m|min)?)?$/))) return +m[1] * 60 + (m[2] ? +m[2] : 0);
+  if ((m = s.match(/^(\d+(?:\.\d+)?)\s*(?:m|min|minutter)?$/))) return +m[1];
+  return 0;
+}
+const fmtKm = (v) => (Math.round(v * 10) / 10).toLocaleString("nb-NO", { maximumFractionDigits: 1 });
+const fmtTid = (min) => { const t = Math.round(min); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, "0")}`; };
+const fmtTidLang = (min) => { const t = Math.round(min); const h = Math.floor(t / 60), m = t % 60; return h ? `${h} t${m ? ` ${m} min` : ""}` : `${m} min`; };
+
+// ---------- datamodell ----------
+const tomOkt = () => ({ plan: "", gj: "", km: "", tid: "", rpe: "", avvik: "" });
+const tomUke = (key) => ({
+  v: 1, key, fokus: "", foltes: "", justering: "", updated: 0,
+  days: DAGER.map(() => ({ okt: [tomOkt(), tomOkt()], trapp: "", sovn: "", dag: "", plager: "", kommentar: "" })),
+});
+function normaliser(d, key) {
+  const t = tomUke(key);
+  if (!d || typeof d !== "object") return t;
+  for (const k of ["fokus", "foltes", "justering"]) if (typeof d[k] === "string") t[k] = d[k];
+  t.updated = +d.updated || 0;
+  (Array.isArray(d.days) ? d.days : []).slice(0, 7).forEach((dag, i) => {
+    if (!dag) return;
+    for (const k of ["trapp", "sovn", "dag", "plager", "kommentar"]) if (typeof dag[k] === "string") t.days[i][k] = dag[k];
+    (Array.isArray(dag.okt) ? dag.okt : []).slice(0, 2).forEach((o, j) => {
+      if (!o) return;
+      for (const k of Object.keys(tomOkt())) if (o[k] != null) t.days[i].okt[j][k] = String(o[k]);
+    });
+  });
+  return t;
+}
+const harInnhold = (w) => !!(w.fokus || w.foltes || w.justering || w.days.some((d) =>
+  d.trapp || d.sovn || d.dag || d.plager || d.kommentar || d.okt.some((o) => Object.values(o).some(Boolean))));
+const oktGjort = (o) => !!(o.gj || o.km || o.tid || o.rpe);
+function summer(w) {
+  let km = 0, tid = 0, okter = 0, rpeSum = 0, rpeN = 0;
+  const perDag = w.days.map((d) => {
+    let dk = 0;
+    d.okt.forEach((o) => {
+      const k = parseKm(o.km); dk += k; km += k; tid += parseTid(o.tid);
+      if (oktGjort(o)) okter++;
+      if (o.rpe) { rpeSum += +o.rpe; rpeN++; }
+    });
+    return dk;
+  });
+  return { km, tid, okter, rpe: rpeN ? rpeSum / rpeN : null, perDag };
+}
+const anbefaling = (trapp, sovn) => {
+  if (!trapp && !sovn) return null;
+  // dårligste farge styrer, men rød søvn alene gir bare gul
+  return FARGER[Math.max(trapp ? NIVA[trapp] : 0, sovn ? Math.min(NIVA[sovn], 1) : 0)];
+};
+
+// ---------- lagring: lokalt + (i Claude-artefakt) synk mellom enheter ----------
+const LS = "treningsdagbok:";
+const lsGet = (k) => { try { const v = localStorage.getItem(LS + k); return v ? JSON.parse(v) : null; } catch { return null; } };
+const lsSet = (k, v) => { try { localStorage.setItem(LS + k, JSON.stringify(v)); } catch {} };
+const lsKeys = () => { try { return Object.keys(localStorage).filter((k) => k.startsWith(LS + "20")).map((k) => k.slice(LS.length)); } catch { return []; } };
+
+const store = {
+  db: null, unsub: null, timer: null, pending: false,
+  async kobleTil() {
+    try {
+      if (!window.claude || typeof window.claude.use !== "function") return;
+      const db = await window.claude.use("db");
+      if (!db) return;
+      this.db = db;
+      settSync("Synkroniseres mellom enhetene dine");
+      await last(state.key, true);
+    } catch { /* fortsetter lokalt */ }
+  },
+  ref(key) { return this.db.doc("weeks/" + key); },
+  lagre(w) {
+    w.updated = Date.now();
+    lsSet(w.key, w);
+    if (!this.db) { settSync("Lagret på denne enheten"); return; }
+    this.pending = true;
+    settSync("Lagrer …");
+    clearTimeout(this.timer);
+    this.timer = setTimeout(() => this.skriv(w), 700);
+  },
+  async skriv(w) {
+    try {
+      await this.ref(w.key).set(JSON.parse(JSON.stringify(w)));
+      this.pending = false;
+      settSync("Lagret og synkronisert");
+    } catch (e) {
+      this.pending = false;
+      settSync("Kun lagret lokalt – synk feilet", true);
+    }
+  },
+  async hent(key) {
+    if (!this.db) return null;
+    try { const s = await this.ref(key).get(); return s.exists ? s.data() : null; } catch { return null; }
+  },
+  lytt(key) {
+    if (this.unsub) { this.unsub(); this.unsub = null; }
+    if (!this.db) return;
+    try {
+      this.unsub = this.ref(key).onSnapshot((snap) => {
+        if (!snap.exists || snap.metadata.hasPendingWrites || this.pending || key !== state.key) return;
+        const fjern = normaliser(snap.data(), key);
+        if (fjern.updated > state.week.updated) {
+          state.week = fjern; lsSet(key, fjern);
+          venterRender = true; renderHvisLedig();
+        }
+      }, () => {});
+    } catch {}
+  },
+  async alleUker() {
+    const ut = {};
+    for (const k of lsKeys()) { const w = lsGet(k); if (w) ut[k] = w; }
+    if (this.db) {
+      try { const s = await this.db.collection("weeks").get(); s.docs.forEach((d) => { const w = d.data(); if (w && (!ut[d.id] || (w.updated || 0) > (ut[d.id].updated || 0))) ut[d.id] = w; }); } catch {}
+    }
+    return ut;
+  },
+};
+function settSync(t, feil) { const el = $("#sync"); el.textContent = t; el.style.color = feil ? "var(--r)" : ""; }
+
+// ---------- tilstand ----------
+const $ = (s, r = document) => r.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const state = { key: iDagNokkel(), week: null, tab: null, dag: iDagIndeks(), visOkt2: {}, forrige: null };
+let venterRender = false;
+
+async function last(key, fraKobling) {
+  state.key = key;
+  let lokal = lsGet(key) ? normaliser(lsGet(key), key) : null;
+  const fjern = await store.hent(key);
+  let w = lokal || tomUke(key);
+  if (fjern) {
+    const f = normaliser(fjern, key);
+    if (!lokal || f.updated >= lokal.updated) { w = f; lsSet(key, f); }
+    else store.lagre(lokal);
+  } else if (lokal && harInnhold(lokal) && store.db) store.lagre(lokal);
+  if (key !== state.key) return;
+  state.week = w;
+  const fk = flyttUke(key, -1);
+  const fl = lsGet(fk) || (await store.hent(fk));
+  state.forrige = fl ? normaliser(fl, fk) : null;
+  if (!state.tab || !fraKobling) {
+    state.tab = state.tab || (key === iDagNokkel() && !w.days.some((d) => d.okt.some((o) => o.plan)) ? "plan" : "dag");
+  }
+  state.dag = key === iDagNokkel() ? (fraKobling ? state.dag : iDagIndeks()) : state.dag;
+  store.lytt(key);
+  render();
+}
+
+function sett(path, verdi) {
+  const deler = path.split(".");
+  let o = state.week;
+  for (let i = 0; i < deler.length - 1; i++) o = o[deler[i]];
+  o[deler.at(-1)] = verdi;
+  store.lagre(state.week);
+  oppdaterSum();
+}
+const hentVerdi = (path) => path.split(".").reduce((o, k) => (o == null ? o : o[k]), state.week);
+
+// ---------- rendering ----------
+function render() {
+  venterRender = false;
+  const w = state.week;
+  const ds = datoer(state.key);
+  const { uke } = isoUke(ds[3]);
+  $("#weekTitle").textContent = `Uke ${uke}`;
+  const a = ds[0], b = ds[6];
+  $("#weekRange").textContent = `${a.getDate()}. ${MND[a.getMonth()]} – ${b.getDate()}. ${MND[b.getMonth()]} ${b.getFullYear()}`;
+  $("#toToday").hidden = state.key === iDagNokkel();
+  document.querySelectorAll(".tabs button").forEach((b) => b.setAttribute("aria-selected", String(b.dataset.tab === state.tab)));
+  const v = $("#view");
+  v.innerHTML = state.tab === "plan" ? visPlan(w, ds) : state.tab === "uka" ? visUka(w, ds) : visDag(w, ds);
+  v.querySelectorAll("textarea").forEach(autoHoyde);
+  oppdaterSum();
+}
+function renderHvisLedig() {
+  const a = document.activeElement;
+  if (a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA") && $("#view").contains(a)) return;
+  if (venterRender) render();
+}
+document.addEventListener("focusout", () => setTimeout(renderHvisLedig, 50));
+
+const inp = (path, ph = "", attrs = "") => `<input type="text" id="f-${path}" data-k="${path}" value="${esc(hentVerdi(path))}" placeholder="${esc(ph)}" ${attrs}>`;
+const txt = (path, ph = "", rows = 2) => `<textarea id="f-${path}" data-k="${path}" rows="${rows}" placeholder="${esc(ph)}">${esc(hentVerdi(path))}</textarea>`;
+const dagEtikett = (i, ds) => `${DAGER_LANG[i]} ${ds[i].getDate()}. ${MND[ds[i].getMonth()]}`;
+
+function visPlan(w, ds) {
+  const just = state.forrige && state.forrige.justering;
+  return `<section class="card">
+    <div class="sec-h"><span class="phase">Før uka</span><h2>Plan og hensikt</h2></div>
+    <div class="field"><label for="f-fokus">Ukens fokus</label>${inp("fokus", "F.eks. bygge volum rolig, én hard økt")}</div>
+    ${just ? `<div class="lastweek"><b>Justering du skrev for forrige uke</b>${esc(just)}</div>` : ""}
+    <div>
+    ${w.days.map((d, i) => `<div class="planrow">
+      <div class="dayname">${DAGER[i]}<span>${ds[i].getDate()}. ${MND[ds[i].getMonth()]}</span></div>
+      <div class="inputs">
+        ${inp(`days.${i}.okt.0.plan`, "Økt og hensikt, f.eks. «Rolig 8 km – restitusjon»")}
+        ${d.okt[1].plan || state.visOkt2["p" + i] ? inp(`days.${i}.okt.1.plan`, "Økt 2 (valgfritt)") : `<button class="ghost" data-act="okt2p" data-i="${i}">+ Økt 2</button>`}
+      </div></div>`).join("")}
+    </div>
+    <p class="hint">Skriv planen før uka starter. Under «Dag» fyller du ut form før økt samme dag, og resten etter økta.</p>
+  </section>`;
+}
+
+function lysKnapper(path, etiketter) {
+  const v = hentVerdi(path);
+  return `<div class="seg" role="group">${FARGER.map((f) => `<button data-act="velg" data-k="${path}" data-v="${f}" aria-pressed="${v === f}"><span class="dot ${f}"></span>${etiketter[f]}</button>`).join("")}</div>`;
+}
+
+function visDag(w, ds) {
+  const i = state.dag, d = w.days[i];
+  const erIdag = state.key === iDagNokkel();
+  const strip = `<div class="days" role="group" aria-label="Velg dag">${DAGER.map((n, j) => {
+    const dj = w.days[j];
+    const status = dj.okt.some(oktGjort) ? "done" : dj.okt.some((o) => o.plan) ? "planned" : "";
+    return `<button data-act="dag" data-i="${j}" aria-pressed="${j === i}" class="${erIdag && j === iDagIndeks() ? "today" : ""}">${n}<b>${ds[j].getDate()}</b><i class="${status}"></i></button>`;
+  }).join("")}</div>`;
+  const anb = anbefaling(d.trapp, d.sovn);
+  const visO2 = d.okt[1].plan || oktGjort(d.okt[1]) || d.okt[1].avvik || state.visOkt2["d" + i];
+  const oktSkjema = (j) => {
+    const o = d.okt[j], p = `days.${i}.okt.${j}`;
+    const t = parseTid(o.tid);
+    return `<div class="okt">
+      <h3>Økt ${j + 1}</h3>
+      <div class="planbox"><span class="lbl">Plan / hensikt</span>${o.plan ? `<p>${esc(o.plan)}</p>` : `<p class="empty">Ingen plan skrevet</p>`}</div>
+      <div class="field"><label for="f-${p}.gj">Gjennomført – økt / intervaller</label>${txt(p + ".gj", "F.eks. 6 × 1000 m, 90 s pause")}</div>
+      <div class="grid3">
+        <div class="field"><label for="f-${p}.km">Km</label>${inp(p + ".km", "0", 'inputmode="decimal" class="num"')}</div>
+        <div class="field"><label for="f-${p}.tid">Varighet</label>${inp(p + ".tid", "45 eller 1:15", 'class="num"')}<span class="parsed" data-parsed="${p}.tid">${o.tid ? (t ? "= " + fmtTidLang(t) : "Skjønner ikke formatet") : ""}</span></div>
+      </div>
+      <div class="field"><span class="lbl">RPE 1–10 · hele økta, ca. 30 min etter</span>
+        <div class="rpe" role="group">${Array.from({ length: 10 }, (_, n) => `<button data-act="velg" data-k="${p}.rpe" data-v="${n + 1}" aria-pressed="${o.rpe === String(n + 1)}">${n + 1}</button>`).join("")}</div>
+        <span class="rpe-desc">${o.rpe ? RPE_TEKST[o.rpe] : ""}</span></div>
+      <div class="field"><label for="f-${p}.avvik">Avvik fra plan – hva og hvorfor</label>${txt(p + ".avvik", "", 1)}</div>
+    </div>`;
+  };
+  return `${strip}
+  <section class="card">
+    <div class="sec-h"><h2>${dagEtikett(i, ds)}</h2></div>
+    <div class="sec-h"><span class="phase">Før økt</span><span class="when">samme dag, før du trener</span></div>
+    <div class="lights">
+      <span class="lbl">Trapp</span>${lysKnapper(`days.${i}.trapp`, { gronn: "Grønn", gul: "Gul", rod: "Rød" })}
+      <span class="lbl">Søvn</span>${lysKnapper(`days.${i}.sovn`, { gronn: "Grønn", gul: "Gul", rod: "Rød" })}
+    </div>
+    ${anb ? `<div class="rec ${anb}"><span class="dot ${anb} fylt"></span><div>${ANBEFALING[anb][0]}<small>Dårligste farge styrer · rød søvn alene = gul</small></div></div>` : ""}
+  </section>
+  <section class="card">
+    <div class="sec-h"><span class="phase">Etter økt</span><span class="when">når økta er gjennomført</span></div>
+    ${oktSkjema(0)}
+    ${visO2 ? oktSkjema(1) : `<button class="ghost" data-act="okt2d" data-i="${i}">+ Legg til økt 2</button>`}
+  </section>
+  <section class="card">
+    <div class="sec-h"><span class="phase">Dagen</span></div>
+    <div class="field"><label for="f-days.${i}.kommentar">Kommentar – fritt notat</label>${txt(`days.${i}.kommentar`)}</div>
+    <div class="field"><span class="lbl">Dagsfølelse</span>
+      <div class="seg" role="group">${["bedre", "vanlig", "verre"].map((f) => `<button data-act="velg" data-k="days.${i}.dag" data-v="${f}" aria-pressed="${d.dag === f}">${f[0].toUpperCase() + f.slice(1)}</button>`).join("")}</div></div>
+    <div class="field"><span class="lbl">Plager</span>${lysKnapper(`days.${i}.plager`, PLAGER)}</div>
+  </section>`;
+}
+
+function visUka(w, ds) {
+  const s = summer(w);
+  const maks = Math.max(1, ...s.perDag);
+  return `<section class="card">
+    <div class="sec-h"><h2>Uka i tall</h2></div>
+    <div class="stats">
+      <div class="stat"><b>${fmtKm(s.km)}</b><span>km</span></div>
+      <div class="stat"><b>${fmtTid(s.tid)}</b><span>timer:min</span></div>
+      <div class="stat"><b>${s.okter}</b><span>${s.okter === 1 ? "økt" : "økter"}</span></div>
+      <div class="stat"><b>${s.rpe == null ? "–" : s.rpe.toLocaleString("nb-NO", { maximumFractionDigits: 1 })}</b><span>snitt RPE</span></div>
+    </div>
+    <div class="bars" aria-label="Km per dag">${s.perDag.map((k, i) => `<div class="bar"><div style="height:${Math.round((k / maks) * 60)}px"></div><em>${k ? fmtKm(k) : ""}</em>${DAGER[i]}</div>`).join("")}</div>
+    <div class="tablewrap"><table>
+      <thead><tr><th>Dag</th><th>Plan</th><th>Gjennomført</th><th class="n">Km</th><th class="n">Tid</th><th class="n">RPE</th></tr></thead>
+      <tbody>${w.days.flatMap((d, i) => d.okt.map((o, j) => ({ o, i, j }))).filter(({ o, j }) => j === 0 || o.plan || oktGjort(o)).map(({ o, i, j }) =>
+        `<tr><td>${j ? "" : DAGER[i]}</td><td>${esc(o.plan)}</td><td>${esc(o.gj)}</td><td class="n">${o.km ? fmtKm(parseKm(o.km)) : ""}</td><td class="n">${parseTid(o.tid) ? fmtTid(parseTid(o.tid)) : esc(o.tid)}</td><td class="n">${esc(o.rpe)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td colspan="3">Sum uke</td><td class="n">${fmtKm(s.km)}</td><td class="n">${fmtTid(s.tid)}</td><td></td></tr></tfoot>
+    </table></div>
+  </section>
+  <section class="card">
+    <div class="sec-h"><span class="phase">Etter uka</span><h2>Refleksjon</h2></div>
+    <div class="field"><label for="f-foltes">Hvordan føltes uka?</label>${txt("foltes", "Kort – energi, form, hva som gikk bra og mindre bra", 3)}</div>
+    <div class="field"><label for="f-justering">Justering neste uke</label>${txt("justering", "Hva endrer du? Vises når du planlegger neste uke.", 3)}</div>
+  </section>
+  <section class="card">
+    <div class="sec-h"><h2>Eksport</h2></div>
+    <p class="hint">PDF-en er ditt eget skjema, ferdig utfylt. Åpne den og skriv ut derfra.</p>
+    <div class="actions">
+      <button class="btn" data-act="pdf" id="pdfBtn">Last ned PDF</button>
+      <button class="btn sec" data-act="backup">Sikkerhetskopi (JSON)</button>
+      <label class="btn sec" for="importFil">Gjenopprett …</label>
+      <input type="file" id="importFil" accept="application/json,.json" hidden>
+    </div>
+    <p class="msg" id="eksportMsg"></p>
+    <div id="importConfirm"></div>
+  </section>`;
+}
+
+function oppdaterSum() {
+  if (!state.week) return;
+  const s = summer(state.week);
+  $("#sumKm").textContent = fmtKm(s.km);
+  $("#sumTid").textContent = fmtTid(s.tid);
+  $("#sumOkt").textContent = s.okter;
+  $("#sumOktTxt").textContent = s.okter === 1 ? "økt" : "økter";
+}
+function autoHoyde(t) { t.style.height = "auto"; t.style.height = t.scrollHeight + 2 + "px"; }
+
+// ---------- hendelser ----------
+document.addEventListener("input", (e) => {
+  const k = e.target.dataset && e.target.dataset.k;
+  if (!k) return;
+  sett(k, e.target.value);
+  if (e.target.tagName === "TEXTAREA") autoHoyde(e.target);
+  const p = document.querySelector(`[data-parsed="${CSS.escape(k)}"]`);
+  if (p) { const t = parseTid(e.target.value); p.textContent = e.target.value ? (t ? "= " + fmtTidLang(t) : "Skjønner ikke formatet") : ""; }
+});
+document.addEventListener("click", async (e) => {
+  const tab = e.target.closest(".tabs button");
+  if (tab) { state.tab = tab.dataset.tab; render(); return; }
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === "velg") {
+    const ny = hentVerdi(b.dataset.k) === b.dataset.v ? "" : b.dataset.v;
+    sett(b.dataset.k, ny);
+    const y = window.scrollY; render(); window.scrollTo(0, y);
+  } else if (act === "dag") { state.dag = +b.dataset.i; render(); }
+  else if (act === "okt2p" || act === "okt2d") {
+    state.visOkt2[(act === "okt2p" ? "p" : "d") + b.dataset.i] = true; render();
+    const f = act === "okt2p" ? $(`#f-days\\.${b.dataset.i}\\.okt\\.1\\.plan`) : $(`#f-days\\.${b.dataset.i}\\.okt\\.1\\.gj`);
+    if (f) f.focus();
+  } else if (act === "pdf") lagPdf(b);
+  else if (act === "backup") backup();
+  else if (act === "importer") { await importer(); }
+  else if (act === "avbryt") { $("#importConfirm").innerHTML = ""; ventendeImport = null; }
+});
+$("#prevWeek").onclick = () => last(flyttUke(state.key, -1));
+$("#nextWeek").onclick = () => last(flyttUke(state.key, 1));
+$("#toToday").onclick = () => last(iDagNokkel());
+
+// ---------- filer ----------
+async function lagre(filnavn, data, mime) {
+  const dl = window.claude && typeof window.claude.use === "function" ? await window.claude.use("downloads").catch(() => null) : null;
+  if (dl) { await dl.save({ filename: filnavn, data }); return "saved"; }
+  const url = URL.createObjectURL(new Blob([data], { type: mime }));
+  const a = document.createElement("a");
+  a.href = url; a.download = filnavn; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  return "saved";
+}
+function melding(t, feil) { const m = $("#eksportMsg"); if (m) { m.textContent = t; m.className = "msg" + (feil ? " err" : ""); } }
+const feilTekst = (e) => (e && e.code === "declined" ? "Lagring avbrutt." : "Klarte ikke å lagre filen" + (e && e.message ? `: ${e.message}` : "."));
+
+async function backup() {
+  try {
+    const alle = await store.alleUker();
+    await lagre(`treningsdagbok-backup-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify({ app: "treningsdagbok", v: 1, uker: alle }, null, 1), "application/json");
+    melding(`Sikkerhetskopi med ${Object.keys(alle).length} uke(r) er laget.`);
+  } catch (e) { melding(feilTekst(e), true); }
+}
+let ventendeImport = null;
+document.addEventListener("change", async (e) => {
+  if (e.target.id !== "importFil" || !e.target.files[0]) return;
+  try {
+    const data = JSON.parse(await e.target.files[0].text());
+    const uker = data && data.uker;
+    if (!uker || typeof uker !== "object") throw new Error("Filen er ikke en sikkerhetskopi fra Treningsdagbok.");
+    ventendeImport = uker;
+    $("#importConfirm").innerHTML = `<div class="confirm">Gjenopprette ${Object.keys(uker).length} uke(r)? Uker som finnes i filen overskriver det som er lagret nå.
+      <button class="btn" data-act="importer">Gjenopprett</button><button class="btn sec" data-act="avbryt">Avbryt</button></div>`;
+  } catch (err) { melding(err.message || "Kunne ikke lese filen.", true); }
+  e.target.value = "";
+});
+async function importer() {
+  const uker = ventendeImport; ventendeImport = null;
+  if (!uker) return;
+  let n = 0;
+  for (const [k, w] of Object.entries(uker)) {
+    if (!/^\d{4}-W\d{2}$/.test(k)) continue;
+    const nw = normaliser(w, k); nw.updated = Date.now();
+    lsSet(k, nw);
+    if (store.db) { try { await store.ref(k).set(JSON.parse(JSON.stringify(nw))); } catch {} }
+    n++;
+  }
+  await last(state.key);
+  melding(`${n} uke(r) gjenopprettet.`);
+}
+
+// ---------- PDF: fyller ut originalskjemaet ----------
+function b64tilBytes(b64) { const s = atob(b64); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
+function brytLinjer(tekst, font, str, bredde) {
+  const linjer = [];
+  for (const avsnitt of String(tekst).split("\n")) {
+    let linje = "";
+    for (const ord of avsnitt.split(/\s+/)) {
+      const prov = linje ? linje + " " + ord : ord;
+      if (font.widthOfTextAtSize(prov, str) <= bredde || !linje) linje = prov;
+      else { linjer.push(linje); linje = ord; }
+    }
+    linjer.push(linje);
+  }
+  return linjer;
+}
+// Krymper skrifta til teksten får plass i feltet, men aldri større enn skjemaets egen størrelse
+function fyllTekst(form, font, navn, tekst, maks) {
+  if (!tekst) return;
+  const felt = form.getTextField(navn);
+  const r = felt.acroField.getWidgets()[0].getRectangle();
+  const bredde = r.width - 6, hoyde = r.height - 3;
+  // fjern tegn Helvetica (WinAnsi) ikke kan skrive
+  tekst = String(tekst).replace(/[→←]/g, "->").replace(/[^\n\x20-\x7e -ÿ–—‘’“”•…€]/g, "");
+  let str = maks, linjer = [tekst];
+  for (; str >= 4; str -= 0.25) {
+    linjer = brytLinjer(tekst, font, str, bredde);
+    const enLinje = linjer.length === 1 && str * 1.15 <= hoyde;
+    if (enLinje || linjer.length * str * 1.18 <= hoyde) break;
+  }
+  if (linjer.length > 1 || tekst.includes("\n")) felt.enableMultiline(); else felt.disableMultiline();
+  felt.setFontSize(Math.max(str, 4));
+  felt.setText(tekst);
+}
+async function lagPdf(knapp) {
+  if (!window.PDFLib) { melding("PDF-verktøyet er ikke lastet ennå. Sjekk nettforbindelsen og prøv igjen.", true); return; }
+  knapp.disabled = true; melding("Lager PDF …");
+  try {
+    const { PDFDocument, StandardFonts } = window.PDFLib;
+    const doc = await PDFDocument.load(b64tilBytes(MAL_PDF_B64));
+    const font = await doc.embedFont(StandardFonts.Helvetica);
+    const form = doc.getForm();
+    const w = state.week, ds = datoer(state.key), s = summer(w);
+    // gi refleksjonsfeltene hele boksen under overskriften
+    form.getTextField("Hvordan foltes uka").acroField.getWidgets()[0].setRectangle({ x: 647, y: 88, width: 157, height: 29 });
+    form.getTextField("Justering neste uke").acroField.getWidgets()[0].setRectangle({ x: 647, y: 27, width: 157, height: 29 });
+    fyllTekst(form, font, "Uke", String(isoUke(ds[3]).uke), 11);
+    fyllTekst(form, font, "Ukens fokus", w.fokus, 10);
+    w.days.forEach((d, i) => {
+      const n = PDF_DAG[i];
+      fyllTekst(form, font, `${n} dag`, String(ds[i].getDate()), 9);
+      fyllTekst(form, font, `${n} maned`, String(ds[i].getMonth() + 1), 9);
+      d.okt.forEach((o, j) => {
+        const p = `${n} okt${j + 1} `;
+        fyllTekst(form, font, p + "plan", o.plan, 8);
+        fyllTekst(form, font, p + "gjennomfort", o.gj, 8);
+        fyllTekst(form, font, p + "km", o.km ? fmtKm(parseKm(o.km)) : "", 9);
+        const t = parseTid(o.tid);
+        fyllTekst(form, font, p + "varighet", t ? fmtTidLang(t) : o.tid, 9);
+        fyllTekst(form, font, p + "RPE", o.rpe, 9);
+        fyllTekst(form, font, p + "avvik", o.avvik, 8);
+      });
+      fyllTekst(form, font, `${n} kommentar`, d.kommentar, 8);
+      if (d.trapp) form.getRadioGroup(`${n} form trapp`).select(d.trapp);
+      if (d.sovn) form.getRadioGroup(`${n} form sovn`).select(d.sovn);
+      if (d.dag) form.getRadioGroup(`${n} dagsfolelse`).select(d.dag);
+      if (d.plager) form.getRadioGroup(`${n} plager`).select(d.plager);
+    });
+    if (s.km) fyllTekst(form, font, "Sum km", fmtKm(s.km), 10);
+    if (s.tid) fyllTekst(form, font, "Sum varighet", fmtTidLang(s.tid), 10);
+    fyllTekst(form, font, "Hvordan foltes uka", w.foltes, 9);
+    fyllTekst(form, font, "Justering neste uke", w.justering, 9);
+    form.updateFieldAppearances(font);
+    const bytes = await doc.save();
+    await lagre(`Treningsdagbok ${state.key}.pdf`, bytes, "application/pdf");
+    melding("PDF er laget. Åpne den for å skrive ut.");
+  } catch (e) { melding(feilTekst(e), true); }
+  knapp.disabled = false;
+}
+
+// ---------- start ----------
+last(state.key).then(() => store.kobleTil());
+})();
+</script>
